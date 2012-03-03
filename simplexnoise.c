@@ -1,21 +1,20 @@
-
-/* SimplexNoise1234, Simplex noise with true analytic
- * derivative in 1D to 4D.
- *
- * Author: Stefan Gustavson, 2003-2005
- * Contact: stegu@itn.liu.se
- *
- * This code was GPL licensed until February 2011.
- * As the original author of this code, I hereby
- * release it into the public domain.
- * Please feel free to use it for whatever you want.
- * Credit is appreciated where appropriate, and I also
- * appreciate being told where this code finds any use,
- * but you may do as you like.
- */
+// SimplexNoise1234
+// Copyright © 2003-2011, Stefan Gustavson
+//
+// Contact: stegu@itn.liu.se
+//
+// This library is public domain software, released by the author
+// into the public domain in February 2011. You may do anything
+// you like with it. You may even remove all attributions,
+// but of course I'd appreciate it if you kept my name somewhere.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
 
 /** \file
-		\brief C implementation of Perlin Simplex Noise over 1,2,3, and 4 dimensions.
+		\brief Implements the SimplexNoise1234 class for producing Perlin simplex noise.
 		\author Stefan Gustavson (stegu@itn.liu.se)
 */
 
@@ -29,15 +28,14 @@
  * it from scratch to get more readable code. The 1D, 2D and 4D cases
  * were implemented from scratch by me from Ken Perlin's text.
  *
- * This file has no dependencies on any other file, not even its own
- * header file. The header file is made for use by external code only.
+ * This is a highly reusable class. It has no dependencies
+ * on any other file, apart from its own header file.
  */
 
 
-// We don't need to include this. It does no harm, but no use either.
-#include	"simplexnoise1234.h"
+#include	"simplexnoise.h"
 
-#define FASTFLOOR(x) ( ((x)&gt;0) ? ((int)x) : (((int)x)-1) )
+#define FASTFLOOR(x) ( ((x)>0) ? ((int)x) : (((int)x)-1) )
 
 //---------------------------------------------------------------------
 // Static data
@@ -102,33 +100,33 @@ unsigned char perm[512] = {151,160,137,91,90,15,
  * float SLnoise = (noise(x,y,z) + 1.0) * 0.5;
  */
 
-float  grad1( int hash, float x ) {
-    int h = hash &amp; 15;
-    float grad = 1.0f + (h &amp; 7);   // Gradient value 1.0, 2.0, ..., 8.0
-    if (h&amp;8) grad = -grad;         // Set a random sign for the gradient
+static float grad1( int hash, float x ) {
+    int h = hash & 15;
+    float grad = 1.0f + (h & 7);   // Gradient value 1.0, 2.0, ..., 8.0
+    if (h&8) grad = -grad;         // Set a random sign for the gradient
     return ( grad * x );           // Multiply the gradient with the distance
 }
 
-float  grad2( int hash, float x, float y ) {
-    int h = hash &amp; 7;      // Convert low 3 bits of hash code
-    float u = h&lt;4 ? x : y;  // into 8 simple gradient directions,
-    float v = h&lt;4 ? y : x;  // and compute the dot product with (x,y).
-    return ((h&amp;1)? -u : u) + ((h&amp;2)? -2.0f*v : 2.0f*v);
+static float grad2( int hash, float x, float y ) {
+    int h = hash & 7;      // Convert low 3 bits of hash code
+    float u = h<4 ? x : y;  // into 8 simple gradient directions,
+    float v = h<4 ? y : x;  // and compute the dot product with (x,y).
+    return ((h&1)? -u : u) + ((h&2)? -2.0f*v : 2.0f*v);
 }
 
-float  grad3( int hash, float x, float y , float z ) {
-    int h = hash &amp; 15;     // Convert low 4 bits of hash code into 12 simple
-    float u = h&lt;8 ? x : y; // gradient directions, and compute dot product.
-    float v = h&lt;4 ? y : h==12||h==14 ? x : z; // Fix repeats at h = 12 to 15
-    return ((h&amp;1)? -u : u) + ((h&amp;2)? -v : v);
+static float grad3( int hash, float x, float y , float z ) {
+    int h = hash & 15;     // Convert low 4 bits of hash code into 12 simple
+    float u = h<8 ? x : y; // gradient directions, and compute dot product.
+    float v = h<4 ? y : h==12||h==14 ? x : z; // Fix repeats at h = 12 to 15
+    return ((h&1)? -u : u) + ((h&2)? -v : v);
 }
 
-float  grad4( int hash, float x, float y, float z, float t ) {
-    int h = hash &amp; 31;      // Convert low 5 bits of hash code into 32 simple
-    float u = h&lt;24 ? x : y; // gradient directions, and compute dot product.
-    float v = h&lt;16 ? y : z;
-    float w = h&lt;8 ? z : t;
-    return ((h&amp;1)? -u : u) + ((h&amp;2)? -v : v) + ((h&amp;4)? -w : w);
+static float grad4( int hash, float x, float y, float z, float t ) {
+    int h = hash & 31;      // Convert low 5 bits of hash code into 32 simple
+    float u = h<24 ? x : y; // gradient directions, and compute dot product.
+    float v = h<16 ? y : z;
+    float w = h<8 ? z : t;
+    return ((h&1)? -u : u) + ((h&2)? -v : v) + ((h&4)? -w : w);
 }
 
   // A lookup table to traverse the simplex around a given point in 4D.
@@ -155,14 +153,14 @@ float snoise1(float x) {
   float n0, n1;
 
   float t0 = 1.0f - x0*x0;
-//  if(t0 &lt; 0.0f) t0 = 0.0f; // this never happens for the 1D case
+//  if(t0 < 0.0f) t0 = 0.0f;
   t0 *= t0;
-  n0 = t0 * t0 * grad1(perm[i0 &amp; 0xff], x0);
+  n0 = t0 * t0 * grad1(perm[i0 & 0xff], x0);
 
   float t1 = 1.0f - x1*x1;
-//  if(t1 &lt; 0.0f) t1 = 0.0f; // this never happens for the 1D case
+//  if(t1 < 0.0f) t1 = 0.0f;
   t1 *= t1;
-  n1 = t1 * t1 * grad1(perm[i1 &amp; 0xff], x1);
+  n1 = t1 * t1 * grad1(perm[i1 & 0xff], x1);
   // The maximum value of this noise is 8*(3/4)^4 = 2.53125
   // A factor of 0.395 would scale to fit exactly within [-1,1], but
   // we want to match PRMan's 1D noise, so we scale it down some more.
@@ -194,8 +192,8 @@ float snoise2(float x, float y) {
     // For the 2D case, the simplex shape is an equilateral triangle.
     // Determine which simplex we are in.
     int i1, j1; // Offsets for second (middle) corner of simplex in (i,j) coords
-    if(x0&gt;y0) {i1=1; j1=0;} // lower triangle, XY order: (0,0)-&gt;(1,0)-&gt;(1,1)
-    else {i1=0; j1=1;}      // upper triangle, YX order: (0,0)-&gt;(0,1)-&gt;(1,1)
+    if(x0>y0) {i1=1; j1=0;} // lower triangle, XY order: (0,0)->(1,0)->(1,1)
+    else {i1=0; j1=1;}      // upper triangle, YX order: (0,0)->(0,1)->(1,1)
 
     // A step of (1,0) in (i,j) means a step of (1-c,-c) in (x,y), and
     // a step of (0,1) in (i,j) means a step of (-c,1-c) in (x,y), where
@@ -207,26 +205,26 @@ float snoise2(float x, float y) {
     float y2 = y0 - 1.0f + 2.0f * G2;
 
     // Wrap the integer indices at 256, to avoid indexing perm[] out of bounds
-    int ii = i &amp; 0xff;
-    int jj = j &amp; 0xff;
+    int ii = i & 0xff;
+    int jj = j & 0xff;
 
     // Calculate the contribution from the three corners
     float t0 = 0.5f - x0*x0-y0*y0;
-    if(t0 &lt; 0.0f) n0 = 0.0f;
+    if(t0 < 0.0f) n0 = 0.0f;
     else {
       t0 *= t0;
       n0 = t0 * t0 * grad2(perm[ii+perm[jj]], x0, y0); 
     }
 
     float t1 = 0.5f - x1*x1-y1*y1;
-    if(t1 &lt; 0.0f) n1 = 0.0f;
+    if(t1 < 0.0f) n1 = 0.0f;
     else {
       t1 *= t1;
       n1 = t1 * t1 * grad2(perm[ii+i1+perm[jj+j1]], x1, y1);
     }
 
     float t2 = 0.5f - x2*x2-y2*y2;
-    if(t2 &lt; 0.0f) n2 = 0.0f;
+    if(t2 < 0.0f) n2 = 0.0f;
     else {
       t2 *= t2;
       n2 = t2 * t2 * grad2(perm[ii+1+perm[jj+1]], x2, y2);
@@ -269,15 +267,15 @@ float snoise3(float x, float y, float z) {
     int i2, j2, k2; // Offsets for third corner of simplex in (i,j,k) coords
 
 /* This code would benefit from a backport from the GLSL version! */
-    if(x0&gt;=y0) {
-      if(y0&gt;=z0)
+    if(x0>=y0) {
+      if(y0>=z0)
         { i1=1; j1=0; k1=0; i2=1; j2=1; k2=0; } // X Y Z order
-        else if(x0&gt;=z0) { i1=1; j1=0; k1=0; i2=1; j2=0; k2=1; } // X Z Y order
+        else if(x0>=z0) { i1=1; j1=0; k1=0; i2=1; j2=0; k2=1; } // X Z Y order
         else { i1=0; j1=0; k1=1; i2=1; j2=0; k2=1; } // Z X Y order
       }
-    else { // x0&lt;y0
-      if(y0&lt;z0) { i1=0; j1=0; k1=1; i2=0; j2=1; k2=1; } // Z Y X order
-      else if(x0&lt;z0) { i1=0; j1=1; k1=0; i2=0; j2=1; k2=1; } // Y Z X order
+    else { // x0<y0
+      if(y0<z0) { i1=0; j1=0; k1=1; i2=0; j2=1; k2=1; } // Z Y X order
+      else if(x0<z0) { i1=0; j1=1; k1=0; i2=0; j2=1; k2=1; } // Y Z X order
       else { i1=0; j1=1; k1=0; i2=1; j2=1; k2=0; } // Y X Z order
     }
 
@@ -297,34 +295,34 @@ float snoise3(float x, float y, float z) {
     float z3 = z0 - 1.0f + 3.0f*G3;
 
     // Wrap the integer indices at 256, to avoid indexing perm[] out of bounds
-    int ii = i &amp; 0xff;
-    int jj = j &amp; 0xff;
-    int kk = k &amp; 0xff;
+    int ii = i & 0xff;
+    int jj = j & 0xff;
+    int kk = k & 0xff;
 
     // Calculate the contribution from the four corners
     float t0 = 0.6f - x0*x0 - y0*y0 - z0*z0;
-    if(t0 &lt; 0.0f) n0 = 0.0f;
+    if(t0 < 0.0f) n0 = 0.0f;
     else {
       t0 *= t0;
       n0 = t0 * t0 * grad3(perm[ii+perm[jj+perm[kk]]], x0, y0, z0);
     }
 
     float t1 = 0.6f - x1*x1 - y1*y1 - z1*z1;
-    if(t1 &lt; 0.0f) n1 = 0.0f;
+    if(t1 < 0.0f) n1 = 0.0f;
     else {
       t1 *= t1;
       n1 = t1 * t1 * grad3(perm[ii+i1+perm[jj+j1+perm[kk+k1]]], x1, y1, z1);
     }
 
     float t2 = 0.6f - x2*x2 - y2*y2 - z2*z2;
-    if(t2 &lt; 0.0f) n2 = 0.0f;
+    if(t2 < 0.0f) n2 = 0.0f;
     else {
       t2 *= t2;
       n2 = t2 * t2 * grad3(perm[ii+i2+perm[jj+j2+perm[kk+k2]]], x2, y2, z2);
     }
 
     float t3 = 0.6f - x3*x3 - y3*y3 - z3*z3;
-    if(t3&lt;0.0f) n3 = 0.0f;
+    if(t3<0.0f) n3 = 0.0f;
     else {
       t3 *= t3;
       n3 = t3 * t3 * grad3(perm[ii+1+perm[jj+1+perm[kk+1]]], x3, y3, z3);
@@ -375,12 +373,12 @@ float snoise4(float x, float y, float z, float w) {
     // First, six pair-wise comparisons are performed between each possible pair
     // of the four coordinates, and the results are used to add up binary bits
     // for an integer index.
-    int c1 = (x0 &gt; y0) ? 32 : 0;
-    int c2 = (x0 &gt; z0) ? 16 : 0;
-    int c3 = (y0 &gt; z0) ? 8 : 0;
-    int c4 = (x0 &gt; w0) ? 4 : 0;
-    int c5 = (y0 &gt; w0) ? 2 : 0;
-    int c6 = (z0 &gt; w0) ? 1 : 0;
+    int c1 = (x0 > y0) ? 32 : 0;
+    int c2 = (x0 > z0) ? 16 : 0;
+    int c3 = (y0 > z0) ? 8 : 0;
+    int c4 = (x0 > w0) ? 4 : 0;
+    int c5 = (y0 > w0) ? 2 : 0;
+    int c6 = (z0 > w0) ? 1 : 0;
     int c = c1 + c2 + c3 + c4 + c5 + c6;
 
     int i1, j1, k1, l1; // The integer offsets for the second simplex corner
@@ -388,24 +386,24 @@ float snoise4(float x, float y, float z, float w) {
     int i3, j3, k3, l3; // The integer offsets for the fourth simplex corner
 
     // simplex[c] is a 4-vector with the numbers 0, 1, 2 and 3 in some order.
-    // Many values of c will never occur, since e.g. x&gt;y&gt;z&gt;w makes x&lt;z, y&lt;w and x&lt;w
+    // Many values of c will never occur, since e.g. x>y>z>w makes x<z, y<w and x<w
     // impossible. Only the 24 indices which have non-zero entries make any sense.
     // We use a thresholding to set the coordinates in turn from the largest magnitude.
     // The number 3 in the "simplex" array is at the position of the largest coordinate.
-    i1 = simplex[c][0]&gt;=3 ? 1 : 0;
-    j1 = simplex[c][1]&gt;=3 ? 1 : 0;
-    k1 = simplex[c][2]&gt;=3 ? 1 : 0;
-    l1 = simplex[c][3]&gt;=3 ? 1 : 0;
+    i1 = simplex[c][0]>=3 ? 1 : 0;
+    j1 = simplex[c][1]>=3 ? 1 : 0;
+    k1 = simplex[c][2]>=3 ? 1 : 0;
+    l1 = simplex[c][3]>=3 ? 1 : 0;
     // The number 2 in the "simplex" array is at the second largest coordinate.
-    i2 = simplex[c][0]&gt;=2 ? 1 : 0;
-    j2 = simplex[c][1]&gt;=2 ? 1 : 0;
-    k2 = simplex[c][2]&gt;=2 ? 1 : 0;
-    l2 = simplex[c][3]&gt;=2 ? 1 : 0;
+    i2 = simplex[c][0]>=2 ? 1 : 0;
+    j2 = simplex[c][1]>=2 ? 1 : 0;
+    k2 = simplex[c][2]>=2 ? 1 : 0;
+    l2 = simplex[c][3]>=2 ? 1 : 0;
     // The number 1 in the "simplex" array is at the second smallest coordinate.
-    i3 = simplex[c][0]&gt;=1 ? 1 : 0;
-    j3 = simplex[c][1]&gt;=1 ? 1 : 0;
-    k3 = simplex[c][2]&gt;=1 ? 1 : 0;
-    l3 = simplex[c][3]&gt;=1 ? 1 : 0;
+    i3 = simplex[c][0]>=1 ? 1 : 0;
+    j3 = simplex[c][1]>=1 ? 1 : 0;
+    k3 = simplex[c][2]>=1 ? 1 : 0;
+    l3 = simplex[c][3]>=1 ? 1 : 0;
     // The fifth corner has all coordinate offsets = 1, so no need to look that up.
 
     float x1 = x0 - i1 + G4; // Offsets for second corner in (x,y,z,w) coords
@@ -426,42 +424,42 @@ float snoise4(float x, float y, float z, float w) {
     float w4 = w0 - 1.0f + 4.0f*G4;
 
     // Wrap the integer indices at 256, to avoid indexing perm[] out of bounds
-    int ii = i &amp; 0xff;
-    int jj = j &amp; 0xff;
-    int kk = k &amp; 0xff;
-    int ll = l &amp; 0xff;
+    int ii = i & 0xff;
+    int jj = j & 0xff;
+    int kk = k & 0xff;
+    int ll = l & 0xff;
 
     // Calculate the contribution from the five corners
     float t0 = 0.6f - x0*x0 - y0*y0 - z0*z0 - w0*w0;
-    if(t0 &lt; 0.0f) n0 = 0.0f;
+    if(t0 < 0.0f) n0 = 0.0f;
     else {
       t0 *= t0;
       n0 = t0 * t0 * grad4(perm[ii+perm[jj+perm[kk+perm[ll]]]], x0, y0, z0, w0);
     }
 
    float t1 = 0.6f - x1*x1 - y1*y1 - z1*z1 - w1*w1;
-    if(t1 &lt; 0.0f) n1 = 0.0f;
+    if(t1 < 0.0f) n1 = 0.0f;
     else {
       t1 *= t1;
       n1 = t1 * t1 * grad4(perm[ii+i1+perm[jj+j1+perm[kk+k1+perm[ll+l1]]]], x1, y1, z1, w1);
     }
 
    float t2 = 0.6f - x2*x2 - y2*y2 - z2*z2 - w2*w2;
-    if(t2 &lt; 0.0f) n2 = 0.0f;
+    if(t2 < 0.0f) n2 = 0.0f;
     else {
       t2 *= t2;
       n2 = t2 * t2 * grad4(perm[ii+i2+perm[jj+j2+perm[kk+k2+perm[ll+l2]]]], x2, y2, z2, w2);
     }
 
    float t3 = 0.6f - x3*x3 - y3*y3 - z3*z3 - w3*w3;
-    if(t3 &lt; 0.0f) n3 = 0.0f;
+    if(t3 < 0.0f) n3 = 0.0f;
     else {
       t3 *= t3;
       n3 = t3 * t3 * grad4(perm[ii+i3+perm[jj+j3+perm[kk+k3+perm[ll+l3]]]], x3, y3, z3, w3);
     }
 
    float t4 = 0.6f - x4*x4 - y4*y4 - z4*z4 - w4*w4;
-    if(t4 &lt; 0.0f) n4 = 0.0f;
+    if(t4 < 0.0f) n4 = 0.0f;
     else {
       t4 *= t4;
       n4 = t4 * t4 * grad4(perm[ii+1+perm[jj+1+perm[kk+1+perm[ll+1]]]], x4, y4, z4, w4);
